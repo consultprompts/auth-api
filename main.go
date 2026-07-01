@@ -25,11 +25,16 @@ func main() {
 		log.Fatalf("failed to load private key: %v", err)
 	}
 
+	publicKey, err := jwt.LoadPublicKey("jwt_public.pem")
+	if err != nil {
+		log.Fatalf("failed to load public key: %v", err)
+	}
+
 	userRepo := repository.NewUserRepository(pool)
 	tokenRepo := repository.NewTokenRepository(pool)
 	roleRepo := repository.NewRoleRepository(pool)
 	authService := service.NewAuthService(userRepo, tokenRepo, roleRepo, privateKey)
-	authHandler := handler.NewAuthHandler(authService)
+	authHandler := handler.NewAuthHandler(authService, publicKey)
 
 	router := gin.Default()
 
@@ -38,6 +43,7 @@ func main() {
 	router.POST("/auth/login", authHandler.Login)
 	router.POST("/auth/refresh", authHandler.Refresh)
 	router.GET("/auth/logout", authHandler.Logout)
+	router.GET("/.well-known/jwks.json", authHandler.JWKS)
 
 	router.Run(":8080")
 }

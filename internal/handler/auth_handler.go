@@ -1,18 +1,21 @@
 package handler
 
 import (
+	"crypto/rsa"
 	"net/http"
 
 	"github.com/consultprompts/auth-service/internal/service"
+	jwtpkg "github.com/consultprompts/auth-service/pkg/jwt"
 	"github.com/gin-gonic/gin"
 )
 
 type AuthHandler struct {
 	authService *service.AuthService
+	publicKey   *rsa.PublicKey
 }
 
-func NewAuthHandler(authService *service.AuthService) *AuthHandler {
-	return &AuthHandler{authService: authService}
+func NewAuthHandler(authService *service.AuthService, publicKey *rsa.PublicKey) *AuthHandler {
+	return &AuthHandler{authService: authService, publicKey: publicKey}
 }
 
 type RegisterRequest struct {
@@ -121,4 +124,9 @@ func (handler *AuthHandler) Logout(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Logout successful"})
+}
+
+func (handler *AuthHandler) JWKS(c *gin.Context) {
+	jwks := jwtpkg.PublicKeyToJWKSet(handler.publicKey)
+	c.JSON(http.StatusOK, jwks)
 }

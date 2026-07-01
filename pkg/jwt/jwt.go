@@ -4,7 +4,9 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
+	"math/big"
 	"os"
 	"time"
 
@@ -23,6 +25,20 @@ func LoadPrivateKey(path string) (*rsa.PrivateKey, error) {
 	}
 
 	return privateKey, nil
+}
+
+func LoadPublicKey(path string) (*rsa.PublicKey, error) {
+	keyData, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	publicKey, err := jwt.ParseRSAPublicKeyFromPEM(keyData)
+	if err != nil {
+		return nil, err
+	}
+
+	return publicKey, nil
 }
 
 type Claims struct {
@@ -56,4 +72,30 @@ func GenerateRefreshToken() (string, error) {
 func HashToken(token string) string {
 	sum := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(sum[:])
+}
+
+type JWK struct {
+	Kty string `json:"kty"`
+	Use string `json:"use"`
+	Alg string `json:"alg"`
+	N   string `json:"n"`
+	E   string `json:"e"`
+}
+
+type JWKSet struct {
+	Keys []JWK `json:"keys"`
+}
+
+func PublicKeyToJWKSet(pub *rsa.PublicKey) JWKSet {
+	return JWKSet{
+		Keys: []JWK{
+			{
+				Kty: "RSA",
+				Use: "sig",
+				Alg: "RS256",
+				N:   base64.RawURLEncoding.EncodeToString(pub.N.Bytes()),
+				E:   base64.RawURLEncoding.EncodeToString(big.NewInt(int64(pub.E)).Bytes()),
+			},
+		},
+	}
 }
