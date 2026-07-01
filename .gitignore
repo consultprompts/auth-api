@@ -1,0 +1,20 @@
+# Secrets - never commit these
+.env
+jwt_private.pem
+jwt_public.pem
+
+# Build artifacts
+/tmp/
+*.exe
+
+# Go-specific
+*.test
+*.out
+vendor/
+
+# Editor/OS noise
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
