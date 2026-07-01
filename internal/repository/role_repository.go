@@ -24,6 +24,17 @@ func (repo *RoleRepository) AssignRoleByName(ctx context.Context, userID, roleNa
 	return err
 }
 
+func (repo *RoleRepository) RemoveRoleByName(ctx context.Context, userID, roleName string) error {
+	query := `
+		DELETE FROM auth.user_roles
+		WHERE user_id = $1
+		AND role_id = (SELECT id FROM auth.roles WHERE name = $2)
+	`
+
+	_, err := repo.db.Exec(ctx, query, userID, roleName)
+	return err
+}
+
 func (repo *RoleRepository) GetRoleNamesByUserID(ctx context.Context, userID string) ([]string, error) {
 	query := `
 		SELECT r.name

@@ -112,3 +112,11 @@ func (service *AuthService) Logout(ctx context.Context, refreshToken string) err
 	tokenHash := jwt.HashToken(refreshToken)
 	return service.tokenRepo.RevokeToken(ctx, tokenHash)
 }
+
+func (service *AuthService) AssignRole(ctx context.Context, userID, roleName string) error {
+	return service.roleRepo.AssignRoleByName(ctx, userID, roleName)
+}
+
+func (service *AuthService) RemoveRole(ctx context.Context, userID, roleName string) error {
+	return service.roleRepo.RemoveRoleByName(ctx, userID, roleName)
+}

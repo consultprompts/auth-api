@@ -146,3 +146,40 @@ func (handler *AuthHandler) Me(c *gin.Context) {
 		"roles": roles,
 	})
 }
+
+type RoleRequest struct {
+	UserID   string `json:"user_id" binding:"required"`
+	RoleName string `json:"role_name" binding:"required"`
+}
+
+func (handler *AuthHandler) AssignRole(c *gin.Context) {
+	var req RoleRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := handler.authService.AssignRole(c.Request.Context(), req.UserID, req.RoleName); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "role assigned successfully"})
+}
+
+func (handler *AuthHandler) RemoveRole(c *gin.Context) {
+	var req RoleRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := handler.authService.RemoveRole(c.Request.Context(), req.UserID, req.RoleName); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "role removed successfully"})
+}

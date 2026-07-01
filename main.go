@@ -50,6 +50,8 @@ func main() {
 	protected.Use(middleware.RequireAuth(publicKey))
 	{
 		protected.GET("/auth/me", authHandler.Me)
+		protected.POST("/auth/roles/assign", authHandler.AssignRole)
+		protected.POST("/auth/roles/remove", authHandler.RemoveRole)
 	}
 
 	router.Run(":8080")
