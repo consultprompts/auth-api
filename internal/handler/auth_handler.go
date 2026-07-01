@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"net/http"
 
+	"github.com/consultprompts/auth-service/internal/middleware"
 	"github.com/consultprompts/auth-service/internal/service"
 	jwtpkg "github.com/consultprompts/auth-service/pkg/jwt"
 	"github.com/gin-gonic/gin"
@@ -129,4 +130,19 @@ func (handler *AuthHandler) Logout(c *gin.Context) {
 func (handler *AuthHandler) JWKS(c *gin.Context) {
 	jwks := jwtpkg.PublicKeyToJWKSet(handler.publicKey)
 	c.JSON(http.StatusOK, jwks)
+}
+
+func (handler *AuthHandler) Me(c *gin.Context) {
+	userID, exists := c.Get(middleware.ContextUserID)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	roles, _ := c.Get(middleware.ContextUserRoles)
+
+	c.JSON(http.StatusOK, gin.H{
+		"id":    userID,
+		"roles": roles,
+	})
 }

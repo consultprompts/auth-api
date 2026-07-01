@@ -5,6 +5,7 @@ import (
 
 	"github.com/consultprompts/auth-service/database"
 	"github.com/consultprompts/auth-service/internal/handler"
+	"github.com/consultprompts/auth-service/internal/middleware"
 	"github.com/consultprompts/auth-service/internal/repository"
 	"github.com/consultprompts/auth-service/internal/service"
 	"github.com/consultprompts/auth-service/pkg/jwt"
@@ -44,6 +45,12 @@ func main() {
 	router.POST("/auth/refresh", authHandler.Refresh)
 	router.GET("/auth/logout", authHandler.Logout)
 	router.GET("/.well-known/jwks.json", authHandler.JWKS)
+
+	protected := router.Group("/")
+	protected.Use(middleware.RequireAuth(publicKey))
+	{
+		protected.GET("/auth/me", authHandler.Me)
+	}
 
 	router.Run(":8080")
 }
