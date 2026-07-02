@@ -48,3 +48,24 @@ func (repo *TokenRepository) GetByTokenHash(ctx context.Context, tokenHash strin
 
 	return &t, nil
 }
+
+func (repo *TokenRepository) RevokeToken(ctx context.Context, tokenHash string) error {
+	query := `
+		UPDATE auth.refresh_tokens
+		SET revoked_at = now()
+		WHERE token_hash = $1
+	`
+
+	_, err := repo.db.Exec(ctx, query, tokenHash)
+	return err
+}
+
+func (repo *TokenRepository) RevokeAllUserTokens(ctx context.Context, userID string) error {
+	query := `
+		UPDATE auth.refresh_tokens
+		SET revoked_at = now()
+		WHERE user_id = $1 AND revoked_at IS NULL
+	`
+	_, err := repo.db.Exec(ctx, query, userID)
+	return err
+}

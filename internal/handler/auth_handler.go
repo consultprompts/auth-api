@@ -85,7 +85,8 @@ type RefreshRequest struct {
 }
 
 type RefreshResponse struct {
-	AccessToken string `json:"access_token"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 func (handler *AuthHandler) Refresh(c *gin.Context) {
@@ -96,13 +97,16 @@ func (handler *AuthHandler) Refresh(c *gin.Context) {
 		return
 	}
 
-	accessToken, err := handler.authService.RefreshAccessToken(c.Request.Context(), req.RefreshToken)
+	accessToken, refreshToken, err := handler.authService.RefreshAccessToken(c.Request.Context(), req.RefreshToken)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, RefreshResponse{AccessToken: accessToken})
+	c.JSON(http.StatusOK, RefreshResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	})
 }
 
 type LogoutRequest struct {

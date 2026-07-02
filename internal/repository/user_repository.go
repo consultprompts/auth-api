@@ -54,14 +54,3 @@ func (repo *UserRepository) GetUserByEmail(ctx context.Context, email string) (*
 
 	return &user, err
 }
-
-func (repo *TokenRepository) RevokeToken(ctx context.Context, tokenHash string) error {
-	query := `
-		UPDATE auth.refresh_tokens
-		SET revoked_at = now()
-		WHERE token_hash = $1
-	`
-
-	_, err := repo.db.Exec(ctx, query, tokenHash)
-	return err
-}
