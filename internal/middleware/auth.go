@@ -21,6 +21,7 @@ func RequireAuth(publicKey *rsa.PublicKey) gin.HandlerFunc {
 		if !strings.HasPrefix(authHeader, "Bearer ") {
 			response.RespondError(c, http.StatusUnauthorized, response.ErrCodeUnauthorized, "missing or invalid authorization header")
 			c.Abort()
+			return
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")

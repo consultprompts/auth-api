@@ -45,7 +45,11 @@ func (handler *AuthHandler) Register(c *gin.Context) {
 
 	user, err := handler.authService.Register(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
-		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, err.Error())
+		if errors.Is(err, service.ErrEmailAlreadyRegistered) {
+			response.RespondError(c, http.StatusConflict, response.ErrCodeEmailExists, err.Error())
+			return
+		}
+		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, "an internal error occurred")
 		return
 	}
 
@@ -79,7 +83,11 @@ func (handler *AuthHandler) Login(c *gin.Context) {
 			response.RespondError(c, http.StatusForbidden, response.ErrCodeEmailNotVerified, err.Error())
 			return
 		}
-		response.RespondError(c, http.StatusUnauthorized, response.ErrCodeInvalidCredentials, err.Error())
+		if errors.Is(err, service.ErrInvalidCredentials) {
+			response.RespondError(c, http.StatusUnauthorized, response.ErrCodeInvalidCredentials, err.Error())
+			return
+		}
+		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, "an internal error occurred")
 		return
 	}
 
@@ -108,7 +116,11 @@ func (handler *AuthHandler) Refresh(c *gin.Context) {
 
 	accessToken, refreshToken, err := handler.authService.RefreshAccessToken(c.Request.Context(), req.RefreshToken)
 	if err != nil {
-		response.RespondError(c, http.StatusUnauthorized, response.ErrCodeInvalidToken, err.Error())
+		if errors.Is(err, service.ErrInvalidRefreshToken) {
+			response.RespondError(c, http.StatusUnauthorized, response.ErrCodeInvalidToken, err.Error())
+			return
+		}
+		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, "an internal error occurred")
 		return
 	}
 
@@ -133,7 +145,7 @@ func (handler *AuthHandler) Logout(c *gin.Context) {
 
 	err = handler.authService.Logout(c.Request.Context(), req.RefreshToken)
 	if err != nil {
-		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, err.Error())
+		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, "an internal error occurred")
 		return
 	}
 
@@ -174,7 +186,7 @@ func (handler *AuthHandler) AssignRole(c *gin.Context) {
 	}
 
 	if err := handler.authService.AssignRole(c.Request.Context(), req.UserID, req.RoleName); err != nil {
-		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, err.Error())
+		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, "an internal error occurred")
 		return
 	}
 
@@ -190,7 +202,7 @@ func (handler *AuthHandler) RemoveRole(c *gin.Context) {
 	}
 
 	if err := handler.authService.RemoveRole(c.Request.Context(), req.UserID, req.RoleName); err != nil {
-		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, err.Error())
+		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, "an internal error occurred")
 		return
 	}
 
@@ -235,7 +247,7 @@ func (handler *AuthHandler) RequestPasswordReset(c *gin.Context) {
 	}
 
 	if err := handler.authService.RequestPasswordReset(c.Request.Context(), req.Email); err != nil {
-		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, err.Error())
+		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, "an internal error occurred")
 		return
 	}
 
@@ -305,12 +317,12 @@ func (handler *AuthHandler) ResendVerification(c *gin.Context) {
 	}
 
 	if err := handler.authService.ResendVerificationEmail(c.Request.Context(), req.Email); err != nil {
-		if err.Error() == "email is already verified" {
-			response.RespondError(c, http.StatusBadRequest, response.ErrCodeInvalidInput, err.Error())
+		// an already-verified email falls through to the generic response so the
+		// endpoint doesn't reveal whether an account exists
+		if !errors.Is(err, service.ErrEmailAlreadyVerified) {
+			response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, "an internal error occurred")
 			return
 		}
-		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, err.Error())
-		return
 	}
 
 	response.RespondOK(c, gin.H{"message": "if that email exists and is unverified, a new verification link has been sent"})

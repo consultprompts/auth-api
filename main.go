@@ -72,14 +72,14 @@ func main() {
 	admin.Use(middleware.RequireRole("admin"))
 	{
 		admin.GET("/auth/users/:id", authHandler.GetUser)
+		admin.POST("/auth/roles/assign", authHandler.AssignRole)
+		admin.POST("/auth/roles/remove", authHandler.RemoveRole)
 	}
 
 	protected := router.Group("/")
 	protected.Use(middleware.RequireAuth(publicKey))
 	{
 		protected.GET("/auth/me", authHandler.Me)
-		protected.POST("/auth/roles/assign", authHandler.AssignRole)
-		protected.POST("/auth/roles/remove", authHandler.RemoveRole)
 	}
 
 	slog.Info("Starting server", "addr", ":8080")

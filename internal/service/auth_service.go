@@ -18,6 +18,7 @@ var ErrInvalidRefreshToken = errors.New("Invalid or expired refresh token")
 var ErrUserNotFound = errors.New("User not found")
 var ErrEmailNotVerified = errors.New("Email not verified")
 var ErrEmailAlreadyVerified = errors.New("Email is already verified")
+var ErrEmailAlreadyRegistered = errors.New("email already registered")
 
 type AuthService struct {
 	userRepo    UserRepository
@@ -57,7 +58,7 @@ func (service *AuthService) Register(ctx context.Context, email, password string
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			return nil, errors.New("email already registered")
+			return nil, ErrEmailAlreadyRegistered
 		}
 		return nil, err
 	}
