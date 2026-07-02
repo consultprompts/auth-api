@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	"github.com/consultprompts/auth-service/internal/model"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -53,4 +55,42 @@ func (repo *UserRepository) GetUserByEmail(ctx context.Context, email string) (*
 	}
 
 	return &user, err
+}
+
+func (repo *UserRepository) StoreVerificationToken(ctx context.Context, userID, tokenHash string, expiresAt time.Time) error {
+	query := `
+		INSERT INTO auth.email_verification_tokens (user_id, token_hash, expires_at)
+		VALUES ($1, $2, $3)
+	`
+	_, err := repo.db.Exec(ctx, query, userID, tokenHash, expiresAt)
+	return err
+}
+
+func (repo *UserRepository) VerifyEmail(ctx context.Context, tokenHash string) error {
+	query := `
+		UPDATE auth.users
+		SET email_verified = true
+		WHERE id = (
+			SELECT user_id FROM auth.email_verification_tokens
+			WHERE token_hash = $1
+			AND expires_at > now()
+		)
+	`
+
+	result, err := repo.db.Exec(ctx, query, tokenHash)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return errors.New("invalid or expired verification token")
+	}
+
+	// delete the token so it can't be reused
+	_, err = repo.db.Exec(ctx, `
+		DELETE FROM auth.email_verification_tokens
+		WHERE token_hash = $1
+	`, tokenHash)
+
+	return err
 }

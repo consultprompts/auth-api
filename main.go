@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/consultprompts/auth-service/database"
+	"github.com/consultprompts/auth-service/internal/email"
 	"github.com/consultprompts/auth-service/internal/handler"
 	"github.com/consultprompts/auth-service/internal/middleware"
 	"github.com/consultprompts/auth-service/internal/repository"
@@ -34,7 +35,8 @@ func main() {
 	userRepo := repository.NewUserRepository(pool)
 	tokenRepo := repository.NewTokenRepository(pool)
 	roleRepo := repository.NewRoleRepository(pool)
-	authService := service.NewAuthService(userRepo, tokenRepo, roleRepo, privateKey)
+	emailClient := email.NewEmailClient()
+	authService := service.NewAuthService(userRepo, tokenRepo, roleRepo, emailClient, privateKey)
 	authHandler := handler.NewAuthHandler(authService, publicKey)
 
 	router := gin.Default()
@@ -45,6 +47,7 @@ func main() {
 	router.POST("/auth/refresh", authHandler.Refresh)
 	router.GET("/auth/logout", authHandler.Logout)
 	router.GET("/.well-known/jwks.json", authHandler.JWKS)
+	router.POST("/auth/verify-email", authHandler.VerifyEmail)
 
 	protected := router.Group("/")
 	protected.Use(middleware.RequireAuth(publicKey))

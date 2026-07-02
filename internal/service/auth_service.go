@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/rsa"
 	"errors"
+	"log"
 	"time"
 
+	"github.com/consultprompts/auth-service/internal/email"
 	"github.com/consultprompts/auth-service/internal/model"
 	"github.com/consultprompts/auth-service/internal/repository"
 	"github.com/consultprompts/auth-service/pkg/jwt"
@@ -17,14 +19,27 @@ var ErrInvalidCredentials = errors.New("Invalid email or password")
 var ErrInvalidRefreshToken = errors.New("Invalid or expired refresh token")
 
 type AuthService struct {
-	userRepo   *repository.UserRepository
-	tokenRepo  *repository.TokenRepository
-	roleRepo   *repository.RoleRepository
-	privateKey *rsa.PrivateKey
+	userRepo    *repository.UserRepository
+	tokenRepo   *repository.TokenRepository
+	roleRepo    *repository.RoleRepository
+	emailClient *email.EmailClient
+	privateKey  *rsa.PrivateKey
 }
 
-func NewAuthService(userRepo *repository.UserRepository, tokenRepo *repository.TokenRepository, roleRepo *repository.RoleRepository, privateKey *rsa.PrivateKey) *AuthService {
-	return &AuthService{userRepo: userRepo, tokenRepo: tokenRepo, roleRepo: roleRepo, privateKey: privateKey}
+func NewAuthService(
+	userRepo *repository.UserRepository,
+	tokenRepo *repository.TokenRepository,
+	roleRepo *repository.RoleRepository,
+	emailClient *email.EmailClient,
+	privateKey *rsa.PrivateKey,
+) *AuthService {
+	return &AuthService{
+		userRepo:    userRepo,
+		tokenRepo:   tokenRepo,
+		roleRepo:    roleRepo,
+		emailClient: emailClient,
+		privateKey:  privateKey,
+	}
 }
 
 func (service *AuthService) Register(ctx context.Context, email, password string) (*model.User, error) {
@@ -49,6 +64,26 @@ func (service *AuthService) Register(ctx context.Context, email, password string
 	if err := service.roleRepo.AssignRoleByName(ctx, user.ID, "student"); err != nil {
 		return nil, err
 	}
+
+	// generate verification token
+	verificationToken, err := jwt.GenerateRefreshToken()
+	if err != nil {
+		return nil, err
+	}
+
+	tokenHash := jwt.HashToken(verificationToken)
+	expiresAt := time.Now().Add(24 * time.Hour)
+
+	if err := service.userRepo.StoreVerificationToken(ctx, user.ID, tokenHash, expiresAt); err != nil {
+		return nil, err
+	}
+
+	// send verification email asynchronously
+	go func() {
+		if err := service.emailClient.SendVerificationEmail(user.Email, verificationToken); err != nil {
+			log.Printf("failed to send verification email to %s: %v", user.Email, err)
+		}
+	}()
 
 	return user, nil
 }
@@ -157,4 +192,9 @@ func (service *AuthService) AssignRole(ctx context.Context, userID, roleName str
 
 func (service *AuthService) RemoveRole(ctx context.Context, userID, roleName string) error {
 	return service.roleRepo.RemoveRoleByName(ctx, userID, roleName)
+}
+
+func (service *AuthService) VerifyEmail(ctx context.Context, token string) error {
+	tokenHash := jwt.HashToken(token)
+	return service.userRepo.VerifyEmail(ctx, tokenHash)
 }
