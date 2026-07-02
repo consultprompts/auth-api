@@ -18,6 +18,7 @@ import (
 var ErrInvalidCredentials = errors.New("Invalid email or password")
 var ErrInvalidRefreshToken = errors.New("Invalid or expired refresh token")
 var ErrUserNotFound = errors.New("User not found")
+var ErrEmailNotVerified = errors.New("Email not verified")
 
 type AuthService struct {
 	userRepo    *repository.UserRepository
@@ -97,6 +98,10 @@ func (service *AuthService) Login(ctx context.Context, email, password string) (
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return "", "", ErrInvalidCredentials
+	}
+
+	if !user.EmailVerified {
+		return "", "", ErrEmailNotVerified
 	}
 
 	var userRoles []string

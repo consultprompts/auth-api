@@ -2,6 +2,7 @@ package handler
 
 import (
 	"crypto/rsa"
+	"errors"
 	"net/http"
 
 	"github.com/consultprompts/auth-service/internal/middleware"
@@ -73,6 +74,10 @@ func (handler *AuthHandler) Login(c *gin.Context) {
 
 	accessToken, refreshToken, err := handler.authService.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
+		if errors.Is(err, service.ErrEmailNotVerified) {
+			response.RespondError(c, http.StatusForbidden, response.ErrCodeEmailNotVerified, err.Error())
+			return
+		}
 		response.RespondError(c, http.StatusUnauthorized, response.ErrCodeInvalidCredentials, err.Error())
 		return
 	}
