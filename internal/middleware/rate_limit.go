@@ -1,10 +1,12 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
 
+	"github.com/consultprompts/auth-service/internal/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -73,10 +75,8 @@ func (lp *LoginProtection) Middleware() gin.HandlerFunc {
 		if time.Now().Before(entry.lockedUntil) {
 			waitSeconds := int(time.Until(entry.lockedUntil).Seconds())
 			lp.mu.Unlock()
-			c.JSON(http.StatusTooManyRequests, gin.H{
-				"error":       "too many failed attempts, please try again later",
-				"retry_after": waitSeconds,
-			})
+			response.RespondError(c, http.StatusTooManyRequests, response.ErrCodeTooManyRequests,
+				fmt.Sprintf("too many failed attempts, please try again in %d seconds", waitSeconds))
 			c.Abort()
 			return
 		}

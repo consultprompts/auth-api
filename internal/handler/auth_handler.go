@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/consultprompts/auth-service/internal/middleware"
+	"github.com/consultprompts/auth-service/internal/response"
 	"github.com/consultprompts/auth-service/internal/service"
 	jwtpkg "github.com/consultprompts/auth-service/pkg/jwt"
 	"github.com/gin-gonic/gin"
@@ -34,13 +35,13 @@ func (handler *AuthHandler) Register(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.RespondError(c, http.StatusBadRequest, response.ErrCodeInvalidInput, err.Error())
 		return
 	}
 
 	user, err := handler.authService.Register(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, err.Error())
 		return
 	}
 
@@ -64,13 +65,13 @@ func (handler *AuthHandler) Login(c *gin.Context) {
 	var req LoginRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.RespondError(c, http.StatusBadRequest, response.ErrCodeInvalidInput, err.Error())
 		return
 	}
 
 	accessToken, refreshToken, err := handler.authService.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		response.RespondError(c, http.StatusUnauthorized, response.ErrCodeInvalidCredentials, err.Error())
 		return
 	}
 
@@ -93,13 +94,13 @@ func (handler *AuthHandler) Refresh(c *gin.Context) {
 	var req RefreshRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.RespondError(c, http.StatusBadRequest, response.ErrCodeInvalidInput, err.Error())
 		return
 	}
 
 	accessToken, refreshToken, err := handler.authService.RefreshAccessToken(c.Request.Context(), req.RefreshToken)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		response.RespondError(c, http.StatusUnauthorized, response.ErrCodeInvalidToken, err.Error())
 		return
 	}
 
@@ -118,13 +119,13 @@ func (handler *AuthHandler) Logout(c *gin.Context) {
 
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.RespondError(c, http.StatusBadRequest, response.ErrCodeInvalidInput, err.Error())
 		return
 	}
 
 	err = handler.authService.Logout(c.Request.Context(), req.RefreshToken)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, err.Error())
 		return
 	}
 
@@ -139,7 +140,7 @@ func (handler *AuthHandler) JWKS(c *gin.Context) {
 func (handler *AuthHandler) Me(c *gin.Context) {
 	userID, exists := c.Get(middleware.ContextUserID)
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		response.RespondError(c, http.StatusUnauthorized, response.ErrCodeUnauthorized, "unauthorized")
 		return
 	}
 
@@ -160,12 +161,12 @@ func (handler *AuthHandler) AssignRole(c *gin.Context) {
 	var req RoleRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.RespondError(c, http.StatusBadRequest, response.ErrCodeInvalidInput, err.Error())
 		return
 	}
 
 	if err := handler.authService.AssignRole(c.Request.Context(), req.UserID, req.RoleName); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, err.Error())
 		return
 	}
 
@@ -176,12 +177,12 @@ func (handler *AuthHandler) RemoveRole(c *gin.Context) {
 	var req RoleRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.RespondError(c, http.StatusBadRequest, response.ErrCodeInvalidInput, err.Error())
 		return
 	}
 
 	if err := handler.authService.RemoveRole(c.Request.Context(), req.UserID, req.RoleName); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, err.Error())
 		return
 	}
 
@@ -196,12 +197,12 @@ func (handler *AuthHandler) VerifyEmail(c *gin.Context) {
 	var req VerifyEmailRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.RespondError(c, http.StatusBadRequest, response.ErrCodeInvalidInput, err.Error())
 		return
 	}
 
 	if err := handler.authService.VerifyEmail(c.Request.Context(), req.Token); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.RespondError(c, http.StatusBadRequest, response.ErrCodeInvalidToken, err.Error())
 		return
 	}
 
@@ -221,12 +222,12 @@ func (handler *AuthHandler) RequestPasswordReset(c *gin.Context) {
 	var req PasswordResetRequestRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.RespondError(c, http.StatusBadRequest, response.ErrCodeInvalidInput, err.Error())
 		return
 	}
 
 	if err := handler.authService.RequestPasswordReset(c.Request.Context(), req.Email); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, err.Error())
 		return
 	}
 
@@ -237,12 +238,12 @@ func (handler *AuthHandler) ResetPassword(c *gin.Context) {
 	var req PasswordResetRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.RespondError(c, http.StatusBadRequest, response.ErrCodeInvalidInput, err.Error())
 		return
 	}
 
 	if err := handler.authService.ResetPassword(c.Request.Context(), req.Token, req.NewPassword); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.RespondError(c, http.StatusBadRequest, response.ErrCodeInvalidToken, err.Error())
 		return
 	}
 

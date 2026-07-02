@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/consultprompts/auth-service/internal/response"
 	jwtpkg "github.com/consultprompts/auth-service/pkg/jwt"
 	"github.com/gin-gonic/gin"
 )
@@ -18,7 +19,7 @@ func RequireAuth(publicKey *rsa.PublicKey) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if !strings.HasPrefix(authHeader, "Bearer ") {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "missing or invalid authorization header"})
+			response.RespondError(c, http.StatusUnauthorized, response.ErrCodeUnauthorized, "missing or invalid authorization header")
 			c.Abort()
 		}
 
@@ -26,7 +27,7 @@ func RequireAuth(publicKey *rsa.PublicKey) gin.HandlerFunc {
 
 		claims, err := jwtpkg.VerifyToken(tokenString, publicKey)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
+			response.RespondError(c, http.StatusUnauthorized, response.ErrCodeInvalidToken, "invalid or expired token")
 			c.Abort()
 			return
 		}
