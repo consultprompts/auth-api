@@ -153,3 +153,20 @@ func (repo *UserRepository) GetUserByID(ctx context.Context, id string) (*model.
 
 	return &u, nil
 }
+
+func (repo *UserRepository) ReplaceVerificationToken(ctx context.Context, userID, tokenHash string, expiresAt time.Time) error {
+	_, err := repo.db.Exec(ctx, `
+		DELETE FROM auth.email_verification_tokens
+		WHERE user_id = $1
+	`, userID)
+	if err != nil {
+		return err
+	}
+
+	_, err = repo.db.Exec(ctx, `
+		INSERT INTO auth.email_verification_tokens (user_id, token_hash, expires_at)
+		VALUES ($1, $2, $3)
+	`, userID, tokenHash, expiresAt)
+
+	return err
+}

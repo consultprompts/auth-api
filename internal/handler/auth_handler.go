@@ -291,3 +291,27 @@ func (h *AuthHandler) GetUser(c *gin.Context) {
 		CreatedAt:     user.CreatedAt,
 	})
 }
+
+type ResendVerificationRequest struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
+func (handler *AuthHandler) ResendVerification(c *gin.Context) {
+	var req ResendVerificationRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.RespondError(c, http.StatusBadRequest, response.ErrCodeInvalidInput, err.Error())
+		return
+	}
+
+	if err := handler.authService.ResendVerificationEmail(c.Request.Context(), req.Email); err != nil {
+		if err.Error() == "email is already verified" {
+			response.RespondError(c, http.StatusBadRequest, response.ErrCodeInvalidInput, err.Error())
+			return
+		}
+		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, err.Error())
+		return
+	}
+
+	response.RespondOK(c, gin.H{"message": "if that email exists and is unverified, a new verification link has been sent"})
+}
