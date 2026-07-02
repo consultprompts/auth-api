@@ -38,7 +38,7 @@ func main() {
 	emailClient := email.NewEmailClient()
 	loginProtection := middleware.NewLoginProtection()
 	authService := service.NewAuthService(userRepo, tokenRepo, roleRepo, emailClient, privateKey)
-	authHandler := handler.NewAuthHandler(authService, publicKey)
+	authHandler := handler.NewAuthHandler(authService, publicKey, pool)
 
 	router := gin.Default()
 
@@ -51,6 +51,7 @@ func main() {
 	router.POST("/auth/verify-email", authHandler.VerifyEmail)
 	router.POST("/auth/password/reset-request", authHandler.RequestPasswordReset)
 	router.POST("/auth/password/reset", authHandler.ResetPassword)
+	router.GET("/healthz", authHandler.Healthz)
 
 	protected := router.Group("/")
 	protected.Use(middleware.RequireAuth(publicKey))

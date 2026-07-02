@@ -9,15 +9,17 @@ import (
 	"github.com/consultprompts/auth-service/internal/service"
 	jwtpkg "github.com/consultprompts/auth-service/pkg/jwt"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type AuthHandler struct {
 	authService *service.AuthService
 	publicKey   *rsa.PublicKey
+	pool        *pgxpool.Pool
 }
 
-func NewAuthHandler(authService *service.AuthService, publicKey *rsa.PublicKey) *AuthHandler {
-	return &AuthHandler{authService: authService, publicKey: publicKey}
+func NewAuthHandler(authService *service.AuthService, publicKey *rsa.PublicKey, pool *pgxpool.Pool) *AuthHandler {
+	return &AuthHandler{authService: authService, publicKey: publicKey, pool: pool}
 }
 
 type RegisterRequest struct {
@@ -248,4 +250,12 @@ func (handler *AuthHandler) ResetPassword(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Password reset successfully"})
+}
+
+func (handler *AuthHandler) Healthz(c *gin.Context) {
+	if err := handler.pool.Ping(c.Request.Context()); err != nil {
+		RespondError(c, http.StatusServiceUnavailable, "DB_UNAVAILABLE", "database connection failed")
+		return
+	}
+	RespondOK(c, gin.H{"status": "ok"})
 }
