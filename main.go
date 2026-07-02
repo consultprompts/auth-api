@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/consultprompts/auth-service/database"
+	database "github.com/consultprompts/auth-service/database"
 	"github.com/consultprompts/auth-service/internal/email"
 	"github.com/consultprompts/auth-service/internal/handler"
 	"github.com/consultprompts/auth-service/internal/middleware"
@@ -20,21 +20,23 @@ func main() {
 	logger.Init()
 
 	if err := godotenv.Load(); err != nil {
-		slog.Warn("no .env file found, using existing environment variables")
+		slog.Warn("No .env file found, using existing environment variables")
 	}
+
+	database.RunMigrations()
 
 	pool := database.Connect()
 	defer pool.Close()
 
 	privateKey, err := jwt.LoadPrivateKey("jwt_private.pem")
 	if err != nil {
-		slog.Error("failed to load private key", "error", err)
+		slog.Error("Failed to load private key", "error", err)
 		os.Exit(1)
 	}
 
 	publicKey, err := jwt.LoadPublicKey("jwt_public.pem")
 	if err != nil {
-		slog.Error("failed to load public key", "error", err)
+		slog.Error("Failed to load public key", "error", err)
 		os.Exit(1)
 	}
 
