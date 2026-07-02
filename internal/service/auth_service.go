@@ -7,9 +7,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/consultprompts/auth-service/internal/email"
 	"github.com/consultprompts/auth-service/internal/model"
-	"github.com/consultprompts/auth-service/internal/repository"
 	"github.com/consultprompts/auth-service/pkg/jwt"
 	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/crypto/bcrypt"
@@ -22,18 +20,18 @@ var ErrEmailNotVerified = errors.New("Email not verified")
 var ErrEmailAlreadyVerified = errors.New("Email is already verified")
 
 type AuthService struct {
-	userRepo    *repository.UserRepository
-	tokenRepo   *repository.TokenRepository
-	roleRepo    *repository.RoleRepository
-	emailClient *email.EmailClient
+	userRepo    UserRepository
+	tokenRepo   TokenRepository
+	roleRepo    RoleRepository
+	emailClient EmailClient
 	privateKey  *rsa.PrivateKey
 }
 
 func NewAuthService(
-	userRepo *repository.UserRepository,
-	tokenRepo *repository.TokenRepository,
-	roleRepo *repository.RoleRepository,
-	emailClient *email.EmailClient,
+	userRepo UserRepository,
+	tokenRepo TokenRepository,
+	roleRepo RoleRepository,
+	emailClient EmailClient,
 	privateKey *rsa.PrivateKey,
 ) *AuthService {
 	return &AuthService{

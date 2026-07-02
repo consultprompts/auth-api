@@ -25,6 +25,7 @@ COPY --from=builder /app/auth-service .
 # TODO: mount these as Docker secrets in production instead of baking into image
 COPY jwt_private.pem .
 COPY jwt_public.pem .
+COPY migrations/ migrations/
 
 EXPOSE 8080
 
