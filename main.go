@@ -36,6 +36,7 @@ func main() {
 	tokenRepo := repository.NewTokenRepository(pool)
 	roleRepo := repository.NewRoleRepository(pool)
 	emailClient := email.NewEmailClient()
+	loginProtection := middleware.NewLoginProtection()
 	authService := service.NewAuthService(userRepo, tokenRepo, roleRepo, emailClient, privateKey)
 	authHandler := handler.NewAuthHandler(authService, publicKey)
 
@@ -43,7 +44,7 @@ func main() {
 
 	router.GET("/healthz", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
 	router.POST("/auth/register", authHandler.Register)
-	router.POST("/auth/login", authHandler.Login)
+	router.POST("/auth/login", loginProtection.Middleware(), authHandler.Login)
 	router.POST("/auth/refresh", authHandler.Refresh)
 	router.POST("/auth/logout", authHandler.Logout)
 	router.GET("/.well-known/jwks.json", authHandler.JWKS)
