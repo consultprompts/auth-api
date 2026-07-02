@@ -19,6 +19,7 @@ var ErrInvalidCredentials = errors.New("Invalid email or password")
 var ErrInvalidRefreshToken = errors.New("Invalid or expired refresh token")
 var ErrUserNotFound = errors.New("User not found")
 var ErrEmailNotVerified = errors.New("Email not verified")
+var ErrEmailAlreadyVerified = errors.New("Email is already verified")
 
 type AuthService struct {
 	userRepo    *repository.UserRepository
@@ -269,4 +270,36 @@ func (service *AuthService) ResetPassword(ctx context.Context, token, newPasswor
 
 func (service *AuthService) GetUserByID(ctx context.Context, id string) (*model.User, error) {
 	return service.userRepo.GetUserByID(ctx, id)
+}
+
+func (service *AuthService) ResendVerificationEmail(ctx context.Context, emailAddr string) error {
+	user, err := service.userRepo.GetUserByEmail(ctx, emailAddr)
+	if err != nil {
+		// don't leak whether email exists
+		return nil
+	}
+
+	if user.EmailVerified {
+		return ErrEmailAlreadyVerified
+	}
+
+	token, err := jwt.GenerateRefreshToken()
+	if err != nil {
+		return err
+	}
+
+	tokenHash := jwt.HashToken(token)
+	expiresAt := time.Now().Add(24 * time.Hour)
+
+	if err := service.userRepo.ReplaceVerificationToken(ctx, user.ID, tokenHash, expiresAt); err != nil {
+		return err
+	}
+
+	go func() {
+		if err := service.emailClient.SendVerificationEmail(user.Email, token); err != nil {
+			slog.Error("Failed to resend verification email", "email", user.Email, "error", err)
+		}
+	}()
+
+	return nil
 }

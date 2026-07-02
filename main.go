@@ -60,6 +60,7 @@ func main() {
 	router.POST("/auth/logout", authHandler.Logout)
 	router.GET("/.well-known/jwks.json", authHandler.JWKS)
 	router.POST("/auth/verify-email", authHandler.VerifyEmail)
+	router.POST("/auth/verify-email/resend", authHandler.ResendVerification)
 	router.POST("/auth/password/reset-request", authHandler.RequestPasswordReset)
 	router.POST("/auth/password/reset", authHandler.ResetPassword)
 	router.GET("/healthz", authHandler.Healthz)
