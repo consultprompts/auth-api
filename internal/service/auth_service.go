@@ -17,6 +17,7 @@ import (
 
 var ErrInvalidCredentials = errors.New("Invalid email or password")
 var ErrInvalidRefreshToken = errors.New("Invalid or expired refresh token")
+var ErrUserNotFound = errors.New("User not found")
 
 type AuthService struct {
 	userRepo    *repository.UserRepository
@@ -197,4 +198,58 @@ func (service *AuthService) RemoveRole(ctx context.Context, userID, roleName str
 func (service *AuthService) VerifyEmail(ctx context.Context, token string) error {
 	tokenHash := jwt.HashToken(token)
 	return service.userRepo.VerifyEmail(ctx, tokenHash)
+}
+
+func (service *AuthService) RequestPasswordReset(ctx context.Context, emailAddr string) error {
+	user, err := service.userRepo.GetUserByEmail(ctx, emailAddr)
+	if err != nil {
+		// deliberately return nil even if user not found
+		// so we don't leak which emails are registered
+		return nil
+	}
+
+	resetToken, err := jwt.GenerateRefreshToken()
+	if err != nil {
+		return err
+	}
+
+	tokenHash := jwt.HashToken(resetToken)
+	expiresAt := time.Now().Add(1 * time.Hour)
+
+	if err := service.userRepo.StorePasswordResetToken(ctx, user.ID, tokenHash, expiresAt); err != nil {
+		return err
+	}
+
+	go func() {
+		if err := service.emailClient.SendPasswordResetEmail(user.Email, resetToken); err != nil {
+			log.Printf("Failed to send password reset email to %s: %v", user.Email, err)
+		}
+	}()
+
+	return nil
+}
+
+func (service *AuthService) ResetPassword(ctx context.Context, token, newPassword string) error {
+	if len(newPassword) < 8 {
+		return errors.New("Password must be at least 8 characters")
+	}
+
+	tokenHash := jwt.HashToken(token)
+
+	user, err := service.userRepo.GetUserByPasswordResetToken(ctx, tokenHash)
+	if err != nil {
+		return errors.New("Invalid or expired reset token")
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	// revoke all sessions — force re-login after password reset
+	if err := service.tokenRepo.RevokeAllUserTokens(ctx, user.ID); err != nil {
+		return err
+	}
+
+	return service.userRepo.ResetPassword(ctx, user.ID, string(hash), tokenHash)
 }

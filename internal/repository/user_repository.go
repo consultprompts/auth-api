@@ -94,3 +94,44 @@ func (repo *UserRepository) VerifyEmail(ctx context.Context, tokenHash string) e
 
 	return err
 }
+
+func (repo *UserRepository) StorePasswordResetToken(ctx context.Context, userID, tokenHash string, expiresAt time.Time) error {
+	query := `
+		INSERT INTO auth.password_reset_tokens (user_id, token_hash, expires_at)
+		VALUES ($1, $2, $3)
+	`
+	_, err := repo.db.Exec(ctx, query, userID, tokenHash, expiresAt)
+	return err
+}
+
+func (repo *UserRepository) GetUserByPasswordResetToken(ctx context.Context, tokenHash string) (*model.User, error) {
+	query := `
+		SELECT u.id, u.email, u.password_hash, u.email_verified, u.status, u.created_at, u.updated_at
+		FROM auth.users u
+		JOIN auth.password_reset_tokens prt ON prt.user_id = u.id
+		WHERE prt.token_hash = $1
+		AND prt.expires_at > now()
+	`
+
+	var u model.User
+	err := repo.db.QueryRow(ctx, query, tokenHash).Scan(&u.ID, &u.Email, &u.PasswordHash, &u.EmailVerified, &u.Status, &u.CreatedAt, &u.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return &u, nil
+}
+
+func (repo *UserRepository) ResetPassword(ctx context.Context, userID, passwordHash, tokenHash string) error {
+	query := ` UPDATE auth.users SET password_hash = $1 WHERE id = $2`
+	_, err := repo.db.Exec(ctx, query, passwordHash, userID)
+	if err != nil {
+		return err
+	}
+
+	_, err = repo.db.Exec(ctx, `
+		DELETE FROM auth.password_reset_tokens WHERE token_hash = $1
+	`, tokenHash)
+
+	return err
+}

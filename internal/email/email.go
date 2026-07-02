@@ -43,3 +43,25 @@ func (email *EmailClient) SendVerificationEmail(to, token string) error {
 	_, err := email.client.Emails.Send(params)
 	return err
 }
+
+func (email *EmailClient) SendPasswordResetEmail(to, token string) error {
+	resetURL := fmt.Sprintf(
+		"http://localhost:3000/reset-password?token=%s", token,
+	)
+
+	params := &resend.SendEmailRequest{
+		From:    email.from,
+		To:      []string{to},
+		Subject: "Reset your password — consultprompts.com",
+		Html: fmt.Sprintf(`
+			<h2>Password Reset Request</h2>
+			<p>Click the link below to reset your password:</p>
+			<a href="%s">Reset Password</a>
+			<p>This link expires in 1 hour.</p>
+			<p>If you didn't request a password reset, you can safely ignore this email.</p>
+		`, resetURL),
+	}
+
+	_, err := email.client.Emails.Send(params)
+	return err
+}

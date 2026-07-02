@@ -207,3 +207,44 @@ func (handler *AuthHandler) VerifyEmail(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "email verified successfully"})
 }
+
+type PasswordResetRequestRequest struct {
+	Email string `json:"email" binding:"required,email"`
+}
+
+type PasswordResetRequest struct {
+	Token       string `json:"token" binding:"required"`
+	NewPassword string `json:"new_password" binding:"required,min=8"`
+}
+
+func (handler *AuthHandler) RequestPasswordReset(c *gin.Context) {
+	var req PasswordResetRequestRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := handler.authService.RequestPasswordReset(c.Request.Context(), req.Email); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "If that email exists, a reset link has been sent"})
+}
+
+func (handler *AuthHandler) ResetPassword(c *gin.Context) {
+	var req PasswordResetRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := handler.authService.ResetPassword(c.Request.Context(), req.Token, req.NewPassword); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Password reset successfully"})
+}

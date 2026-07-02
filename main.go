@@ -45,9 +45,11 @@ func main() {
 	router.POST("/auth/register", authHandler.Register)
 	router.POST("/auth/login", authHandler.Login)
 	router.POST("/auth/refresh", authHandler.Refresh)
-	router.GET("/auth/logout", authHandler.Logout)
+	router.POST("/auth/logout", authHandler.Logout)
 	router.GET("/.well-known/jwks.json", authHandler.JWKS)
 	router.POST("/auth/verify-email", authHandler.VerifyEmail)
+	router.POST("/auth/password/reset-request", authHandler.RequestPasswordReset)
+	router.POST("/auth/password/reset", authHandler.ResetPassword)
 
 	protected := router.Group("/")
 	protected.Use(middleware.RequireAuth(publicKey))
