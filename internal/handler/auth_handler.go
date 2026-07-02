@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/consultprompts/auth-service/internal/middleware"
 	"github.com/consultprompts/auth-service/internal/response"
@@ -263,4 +264,30 @@ func (handler *AuthHandler) Healthz(c *gin.Context) {
 		return
 	}
 	response.RespondOK(c, gin.H{"status": "ok"})
+}
+
+type UserDetailResponse struct {
+	ID            string    `json:"id"`
+	Email         string    `json:"email"`
+	EmailVerified bool      `json:"email_verified"`
+	Status        string    `json:"status"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
+func (h *AuthHandler) GetUser(c *gin.Context) {
+	userID := c.Param("id")
+
+	user, err := h.authService.GetUserByID(c.Request.Context(), userID)
+	if err != nil {
+		response.RespondError(c, http.StatusNotFound, "USER_NOT_FOUND", "user not found")
+		return
+	}
+
+	response.RespondOK(c, UserDetailResponse{
+		ID:            user.ID,
+		Email:         user.Email,
+		EmailVerified: user.EmailVerified,
+		Status:        user.Status,
+		CreatedAt:     user.CreatedAt,
+	})
 }

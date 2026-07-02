@@ -64,6 +64,13 @@ func main() {
 	router.POST("/auth/password/reset", authHandler.ResetPassword)
 	router.GET("/healthz", authHandler.Healthz)
 
+	admin := router.Group("/")
+	admin.Use(middleware.RequireAuth(publicKey))
+	admin.Use(middleware.RequireRole("admin"))
+	{
+		admin.GET("/auth/users/:id", authHandler.GetUser)
+	}
+
 	protected := router.Group("/")
 	protected.Use(middleware.RequireAuth(publicKey))
 	{

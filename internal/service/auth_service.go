@@ -266,3 +266,7 @@ func (service *AuthService) ResetPassword(ctx context.Context, token, newPasswor
 
 	return service.userRepo.ResetPassword(ctx, user.ID, string(hash), tokenHash)
 }
+
+func (service *AuthService) GetUserByID(ctx context.Context, id string) (*model.User, error) {
+	return service.userRepo.GetUserByID(ctx, id)
+}

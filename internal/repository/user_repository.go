@@ -135,3 +135,21 @@ func (repo *UserRepository) ResetPassword(ctx context.Context, userID, passwordH
 
 	return err
 }
+
+func (repo *UserRepository) GetUserByID(ctx context.Context, id string) (*model.User, error) {
+	query := `
+		SELECT id, email, password_hash, email_verified, status, created_at, updated_at
+		FROM auth.users
+		WHERE id = $1
+	`
+
+	var u model.User
+	err := repo.db.QueryRow(ctx, query, id).Scan(
+		&u.ID, &u.Email, &u.PasswordHash, &u.EmailVerified, &u.Status, &u.CreatedAt, &u.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &u, nil
+}
