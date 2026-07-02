@@ -51,6 +51,7 @@ func main() {
 	}
 
 	router := gin.New()
+	router.SetTrustedProxies(nil)
 	router.Use(middleware.RequestLogger(), middleware.Recovery())
 
 	router.POST("/auth/register", authHandler.Register)
