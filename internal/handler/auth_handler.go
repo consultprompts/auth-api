@@ -254,8 +254,8 @@ func (handler *AuthHandler) ResetPassword(c *gin.Context) {
 
 func (handler *AuthHandler) Healthz(c *gin.Context) {
 	if err := handler.pool.Ping(c.Request.Context()); err != nil {
-		RespondError(c, http.StatusServiceUnavailable, "DB_UNAVAILABLE", "database connection failed")
+		response.RespondError(c, http.StatusServiceUnavailable, "DB_UNAVAILABLE", "database connection failed")
 		return
 	}
-	RespondOK(c, gin.H{"status": "ok"})
+	response.RespondOK(c, gin.H{"status": "ok"})
 }

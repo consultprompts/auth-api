@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/rsa"
 	"errors"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/consultprompts/auth-service/internal/email"
@@ -82,7 +82,7 @@ func (service *AuthService) Register(ctx context.Context, email, password string
 	// send verification email asynchronously
 	go func() {
 		if err := service.emailClient.SendVerificationEmail(user.Email, verificationToken); err != nil {
-			log.Printf("failed to send verification email to %s: %v", user.Email, err)
+			slog.Error("failed to send verification email", "email", user.Email, "error", err)
 		}
 	}()
 
@@ -130,7 +130,7 @@ func (service *AuthService) Login(ctx context.Context, email, password string) (
 
 	// go func() {
 	// 	if err := service.emailClient.SendLoginNotificationEmail(user.Email); err != nil {
-	// 		log.Printf("Failed to send login notification to %s: %v", user.Email, err)
+	// 		slog.Error("failed to send login notification", "email", user.Email, "error", err)
 	// 	}
 	// }()
 
@@ -230,7 +230,7 @@ func (service *AuthService) RequestPasswordReset(ctx context.Context, emailAddr 
 
 	go func() {
 		if err := service.emailClient.SendPasswordResetEmail(user.Email, resetToken); err != nil {
-			log.Printf("Failed to send password reset email to %s: %v", user.Email, err)
+			slog.Error("failed to send password reset email", "email", user.Email, "error", err)
 		}
 	}()
 

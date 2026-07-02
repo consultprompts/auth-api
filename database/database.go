@@ -3,7 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -22,13 +22,15 @@ func Connect() *pgxpool.Pool {
 
 	pool, err := pgxpool.New(context.Background(), connStr)
 	if err != nil {
-		log.Fatalf("Unable to create connection pool: %v", err)
+		slog.Error("unable to create connection pool", "error", err)
+		os.Exit(1)
 	}
 
 	if err := pool.Ping(context.Background()); err != nil {
-		log.Fatalf("Unable to ping database: %v", err)
+		slog.Error("unable to ping database", "error", err)
+		os.Exit(1)
 	}
 
-	log.Println("Connected to database!")
+	slog.Info("connected to database")
 	return pool
 }

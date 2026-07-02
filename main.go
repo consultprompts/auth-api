@@ -1,7 +1,8 @@
 package main
 
 import (
-	"log"
+	"log/slog"
+	"os"
 
 	"github.com/consultprompts/auth-service/database"
 	"github.com/consultprompts/auth-service/internal/email"
@@ -10,13 +11,16 @@ import (
 	"github.com/consultprompts/auth-service/internal/repository"
 	"github.com/consultprompts/auth-service/internal/service"
 	"github.com/consultprompts/auth-service/pkg/jwt"
+	"github.com/consultprompts/auth-service/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
 
 func main() {
+	logger.Init()
+
 	if err := godotenv.Load(); err != nil {
-		log.Println("no .env file found, using existing environment variables")
+		slog.Warn("no .env file found, using existing environment variables")
 	}
 
 	pool := database.Connect()
@@ -24,12 +28,14 @@ func main() {
 
 	privateKey, err := jwt.LoadPrivateKey("jwt_private.pem")
 	if err != nil {
-		log.Fatalf("failed to load private key: %v", err)
+		slog.Error("failed to load private key", "error", err)
+		os.Exit(1)
 	}
 
 	publicKey, err := jwt.LoadPublicKey("jwt_public.pem")
 	if err != nil {
-		log.Fatalf("failed to load public key: %v", err)
+		slog.Error("failed to load public key", "error", err)
+		os.Exit(1)
 	}
 
 	userRepo := repository.NewUserRepository(pool)
@@ -40,9 +46,13 @@ func main() {
 	authService := service.NewAuthService(userRepo, tokenRepo, roleRepo, emailClient, privateKey)
 	authHandler := handler.NewAuthHandler(authService, publicKey, pool)
 
-	router := gin.Default()
+	if os.Getenv(gin.EnvGinMode) == "" {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
-	router.GET("/healthz", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
+	router := gin.New()
+	router.Use(middleware.RequestLogger(), middleware.Recovery())
+
 	router.POST("/auth/register", authHandler.Register)
 	router.POST("/auth/login", loginProtection.Middleware(), authHandler.Login)
 	router.POST("/auth/refresh", authHandler.Refresh)
@@ -61,5 +71,9 @@ func main() {
 		protected.POST("/auth/roles/remove", authHandler.RemoveRole)
 	}
 
-	router.Run(":8080")
+	slog.Info("Starting server", "addr", ":8080")
+	if err := router.Run(":8080"); err != nil {
+		slog.Error("Server stopped", "error", err)
+		os.Exit(1)
+	}
 }
