@@ -65,3 +65,20 @@ func (email *EmailClient) SendPasswordResetEmail(to, token string) error {
 	_, err := email.client.Emails.Send(params)
 	return err
 }
+
+func (e *EmailClient) SendLoginNotificationEmail(to string) error {
+	params := &resend.SendEmailRequest{
+		From:    e.from,
+		To:      []string{to},
+		Subject: "New login detected — consultprompts.com",
+		Html: `
+			<h2>New login to your account</h2>
+			<p>We detected a new login to your consultprompts.com account.</p>
+			<p>If this was you, no action is needed.</p>
+			<p>If this wasn't you, <a href="http://localhost:3000/reset-password">reset your password immediately</a>.</p>
+		`,
+	}
+
+	_, err := e.client.Emails.Send(params)
+	return err
+}

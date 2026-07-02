@@ -126,6 +126,14 @@ func (service *AuthService) Login(ctx context.Context, email, password string) (
 		return "", "", err
 	}
 
+	// BECAUSE OF EMAIL API LIMITS IT IS DISABLE FOR TESTING
+
+	// go func() {
+	// 	if err := service.emailClient.SendLoginNotificationEmail(user.Email); err != nil {
+	// 		log.Printf("Failed to send login notification to %s: %v", user.Email, err)
+	// 	}
+	// }()
+
 	return accessToken, refreshToken, nil
 }
 
