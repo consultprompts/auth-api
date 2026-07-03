@@ -82,8 +82,13 @@ func main() {
 		protected.GET("/auth/me", authHandler.Me)
 	}
 
-	slog.Info("Starting server", "addr", ":8080")
-	if err := router.Run(":8080"); err != nil {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8081"
+	}
+
+	slog.Info("Starting server", "addr", port)
+	if err := router.Run(":" + port); err != nil {
 		slog.Error("Server stopped", "error", err)
 		os.Exit(1)
 	}

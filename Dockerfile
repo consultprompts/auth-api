@@ -27,6 +27,6 @@ COPY jwt_private.pem .
 COPY jwt_public.pem .
 COPY migrations/ migrations/
 
-EXPOSE 8080
+EXPOSE 8081
 
 ENTRYPOINT ["/auth-service"]
