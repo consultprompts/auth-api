@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: consultprompts
+      POSTGRES_DB: auth-database
     ports:
       - "5433:5432"
     volumes:
@@ -18,7 +18,7 @@ services:
   auth-service:
     build: .
     ports:
-      - "8080:8080"
+      - "8081:8081"
     env_file:
       - .env
     depends_on:
