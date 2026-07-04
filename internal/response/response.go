@@ -15,6 +15,7 @@ const (
 	ErrCodeTooManyRequests    = "TOO_MANY_REQUESTS"
 	ErrCodeInternalError      = "INTERNAL_ERROR"
 	ErrCodeEmailNotVerified   = "EMAIL_NOT_VERIFIED"
+	ErrCodeForbidden          = "FORBIDDEN"
 )
 
 type ErrorDetail struct {

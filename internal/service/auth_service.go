@@ -19,6 +19,7 @@ var ErrUserNotFound = errors.New("User not found")
 var ErrEmailNotVerified = errors.New("Email not verified")
 var ErrEmailAlreadyVerified = errors.New("Email is already verified")
 var ErrEmailAlreadyRegistered = errors.New("email already registered")
+var ErrAccountNotActive = errors.New("account is suspended or deactivated")
 
 type AuthService struct {
 	userRepo    UserRepository
@@ -98,6 +99,10 @@ func (service *AuthService) Login(ctx context.Context, email, password string) (
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		return "", "", ErrInvalidCredentials
+	}
+
+	if user.Status != "active" {
+		return "", "", ErrAccountNotActive
 	}
 
 	if !user.EmailVerified {

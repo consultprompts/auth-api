@@ -83,6 +83,10 @@ func (handler *AuthHandler) Login(c *gin.Context) {
 			response.RespondError(c, http.StatusForbidden, response.ErrCodeEmailNotVerified, err.Error())
 			return
 		}
+		if errors.Is(err, service.ErrAccountNotActive) {
+			response.RespondError(c, http.StatusForbidden, response.ErrCodeForbidden, err.Error())
+			return
+		}
 		if errors.Is(err, service.ErrInvalidCredentials) {
 			response.RespondError(c, http.StatusUnauthorized, response.ErrCodeInvalidCredentials, err.Error())
 			return
