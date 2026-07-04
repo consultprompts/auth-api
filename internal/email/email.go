@@ -22,10 +22,15 @@ func NewEmailClient() *EmailClient {
 	}
 }
 
+func frontendURL() string {
+	if u := os.Getenv("FRONTEND_URL"); u != "" {
+		return u
+	}
+	return "http://localhost:3000"
+}
+
 func (email *EmailClient) SendVerificationEmail(to, token string) error {
-	verificationURL := fmt.Sprintf(
-		"http://localhost:3000/verify-email?token=%s", token,
-	)
+	verificationURL := fmt.Sprintf("%s/verify-email?token=%s", frontendURL(), token)
 
 	params := &resend.SendEmailRequest{
 		From:    email.from,
@@ -45,9 +50,7 @@ func (email *EmailClient) SendVerificationEmail(to, token string) error {
 }
 
 func (email *EmailClient) SendPasswordResetEmail(to, token string) error {
-	resetURL := fmt.Sprintf(
-		"http://localhost:3000/reset-password?token=%s", token,
-	)
+	resetURL := fmt.Sprintf("%s/reset-password?token=%s", frontendURL(), token)
 
 	params := &resend.SendEmailRequest{
 		From:    email.from,
@@ -71,12 +74,12 @@ func (e *EmailClient) SendLoginNotificationEmail(to string) error {
 		From:    e.from,
 		To:      []string{to},
 		Subject: "New login detected — consultprompts.com",
-		Html: `
+		Html: fmt.Sprintf(`
 			<h2>New login to your account</h2>
 			<p>We detected a new login to your consultprompts.com account.</p>
 			<p>If this was you, no action is needed.</p>
-			<p>If this wasn't you, <a href="http://localhost:3000/reset-password">reset your password immediately</a>.</p>
-		`,
+			<p>If this wasn't you, <a href="%s/reset-password">reset your password immediately</a>.</p>
+		`, frontendURL()),
 	}
 
 	_, err := e.client.Emails.Send(params)

@@ -53,7 +53,7 @@ func (handler *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, UserResponse{
+	response.RespondCreated(c, UserResponse{
 		ID:    user.ID,
 		Email: user.Email,
 	})
@@ -91,7 +91,7 @@ func (handler *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, LoginResponse{
+	response.RespondOK(c, LoginResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	})
@@ -124,7 +124,7 @@ func (handler *AuthHandler) Refresh(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, RefreshResponse{
+	response.RespondOK(c, RefreshResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	})
@@ -149,7 +149,7 @@ func (handler *AuthHandler) Logout(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Logout successful"})
+	response.RespondOK(c, gin.H{"message": "Logout successful"})
 }
 
 func (handler *AuthHandler) JWKS(c *gin.Context) {
@@ -166,7 +166,7 @@ func (handler *AuthHandler) Me(c *gin.Context) {
 
 	roles, _ := c.Get(middleware.ContextUserRoles)
 
-	c.JSON(http.StatusOK, gin.H{
+	response.RespondOK(c, gin.H{
 		"id":    userID,
 		"roles": roles,
 	})
@@ -190,7 +190,7 @@ func (handler *AuthHandler) AssignRole(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "role assigned successfully"})
+	response.RespondOK(c, gin.H{"message": "role assigned successfully"})
 }
 
 func (handler *AuthHandler) RemoveRole(c *gin.Context) {
@@ -206,7 +206,7 @@ func (handler *AuthHandler) RemoveRole(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "role removed successfully"})
+	response.RespondOK(c, gin.H{"message": "role removed successfully"})
 }
 
 type VerifyEmailRequest struct {
@@ -226,7 +226,7 @@ func (handler *AuthHandler) VerifyEmail(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "email verified successfully"})
+	response.RespondOK(c, gin.H{"message": "email verified successfully"})
 }
 
 type PasswordResetRequestRequest struct {
@@ -251,7 +251,7 @@ func (handler *AuthHandler) RequestPasswordReset(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "If that email exists, a reset link has been sent"})
+	response.RespondOK(c, gin.H{"message": "If that email exists, a reset link has been sent"})
 }
 
 func (handler *AuthHandler) ResetPassword(c *gin.Context) {
@@ -267,7 +267,7 @@ func (handler *AuthHandler) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Password reset successfully"})
+	response.RespondOK(c, gin.H{"message": "Password reset successfully"})
 }
 
 func (handler *AuthHandler) Healthz(c *gin.Context) {
