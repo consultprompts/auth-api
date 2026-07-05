@@ -43,7 +43,10 @@ func main() {
 	userRepo := repository.NewUserRepository(pool)
 	tokenRepo := repository.NewTokenRepository(pool)
 	roleRepo := repository.NewRoleRepository(pool)
-	emailClient := email.NewEmailClient()
+	var emailClient service.EmailClient
+	if ec := email.NewEmailClient(); ec != nil {
+		emailClient = ec
+	}
 	loginProtection := middleware.NewLoginProtection()
 	authService := service.NewAuthService(userRepo, tokenRepo, roleRepo, emailClient, privateKey)
 	authHandler := handler.NewAuthHandler(authService, publicKey, pool)

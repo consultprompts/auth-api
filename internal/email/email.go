@@ -1,6 +1,7 @@
 package email
 
 import (
+	"log/slog"
 	"os"
 
 	shared "github.com/consultprompts/shared/email"
@@ -13,13 +14,21 @@ type Client struct {
 	frontendURL string
 }
 
+// NewEmailClient returns nil when email is not configured so callers can treat
+// it as optional. Logs a warning at startup.
 func NewEmailClient() *Client {
+	sharedClient := shared.NewClient()
+	if sharedClient == nil {
+		slog.Warn("Email notifications disabled — set RESEND_API_KEY and RESEND_FROM to enable")
+		return nil
+	}
+
 	url := os.Getenv("FRONTEND_URL")
 	if url == "" {
 		url = "http://localhost:3000"
 	}
 	return &Client{
-		shared:      shared.NewClient(),
+		shared:      sharedClient,
 		frontendURL: url,
 	}
 }

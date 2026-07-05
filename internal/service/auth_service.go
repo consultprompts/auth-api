@@ -82,11 +82,13 @@ func (service *AuthService) Register(ctx context.Context, email, password string
 	}
 
 	// send verification email asynchronously
-	go func() {
-		if err := service.emailClient.SendVerificationEmail(user.Email, verificationToken); err != nil {
-			slog.Error("failed to send verification email", "email", user.Email, "error", err)
-		}
-	}()
+	if service.emailClient != nil {
+		go func() {
+			if err := service.emailClient.SendVerificationEmail(user.Email, verificationToken); err != nil {
+				slog.Error("failed to send verification email", "email", user.Email, "error", err)
+			}
+		}()
+	}
 
 	return user, nil
 }
@@ -238,11 +240,13 @@ func (service *AuthService) RequestPasswordReset(ctx context.Context, emailAddr 
 		return err
 	}
 
-	go func() {
-		if err := service.emailClient.SendPasswordResetEmail(user.Email, resetToken); err != nil {
-			slog.Error("failed to send password reset email", "email", user.Email, "error", err)
-		}
-	}()
+	if service.emailClient != nil {
+		go func() {
+			if err := service.emailClient.SendPasswordResetEmail(user.Email, resetToken); err != nil {
+				slog.Error("failed to send password reset email", "email", user.Email, "error", err)
+			}
+		}()
+	}
 
 	return nil
 }
@@ -299,11 +303,13 @@ func (service *AuthService) ResendVerificationEmail(ctx context.Context, emailAd
 		return err
 	}
 
-	go func() {
-		if err := service.emailClient.SendVerificationEmail(user.Email, token); err != nil {
-			slog.Error("Failed to resend verification email", "email", user.Email, "error", err)
-		}
-	}()
+	if service.emailClient != nil {
+		go func() {
+			if err := service.emailClient.SendVerificationEmail(user.Email, token); err != nil {
+				slog.Error("Failed to resend verification email", "email", user.Email, "error", err)
+			}
+		}()
+	}
 
 	return nil
 }

@@ -16,7 +16,9 @@ services:
       retries: 5
 
   auth-service:
-    build: .
+    build:
+      context: ..
+      dockerfile: auth-service/Dockerfile
     ports:
       - "8081:8081"
     env_file:
