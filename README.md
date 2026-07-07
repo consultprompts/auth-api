@@ -31,7 +31,8 @@ as a foreign key into their own schemas.
 - Refresh token rotation with reuse detection — if a rotated token is reused, all sessions for that user are immediately revoked (theft response)
 - Single active session enforcement — new login revokes all previous refresh tokens
 - Progressive login rate limiting — 5 failed attempts → 1 min lockout, 7 → 3 min, 10 → 10 min
-- Email verification required before login
+- Email verification required before login (not required for Google OAuth sign-ins, since Google already verifies the email)
+- Google OAuth 2.0 sign-in as an alternative to password login
 - Login notification emails on every successful login
 - Short-lived access tokens (15 min) + long-lived refresh tokens (30 days)
 - Soft-delete approach for tokens (`revoked_at` timestamp, never hard DELETE)
@@ -73,6 +74,7 @@ auth-service/
     0001_init.up.sql / .down.sql
     0002_email_verification.up.sql / .down.sql
     0003_password_reset.up.sql / .down.sql
+    0004_seed_admin_user.up.sql / .down.sql   # seeds a default admin login for local dev
   .env                           # local secrets (gitignored)
   .env.example                   # template for required environment variables
   jwt_private.pem                # RSA private key (gitignored)
@@ -110,6 +112,8 @@ auth-service/
 | POST | /auth/verify-email/resend | No | Resend verification email |
 | POST | /auth/password/reset-request | No | Request password reset email |
 | POST | /auth/password/reset | No | Reset password with token |
+| GET | /auth/google/login | No | Redirect to Google's OAuth consent screen |
+| GET | /auth/google/callback | No | Handle Google's OAuth redirect, issue JWT pair |
 | GET | /auth/me | Yes | Get current user info (id, roles) |
 | POST | /auth/roles/assign | Yes (admin) | Assign a role to a user |
 | POST | /auth/roles/remove | Yes (admin) | Remove a role from a user |
@@ -173,6 +177,10 @@ Migrations run automatically on startup. No manual SQL needed.
 
 ## Running with Docker
 
+Postgres builds from `../postgres-jsonlog` (a thin wrapper around the stock
+`postgres` image that tails Postgres's JSON log file to stdout) rather than
+the stock image directly, so `docker compose logs` shows structured query logs.
+
 **Start everything (auth-service + Postgres):**
 ```bash
 docker compose up --build
@@ -213,15 +221,15 @@ Service layer uses interfaces for all dependencies (repositories, email client),
 ## TODO
 
 ### v1.1
-- [ ] OAuth login (Google)
+- [x] OAuth login (Google)
 
 ### v2.0
 - [ ] Redis token blocklist (instant access token revocation — currently 15 min window on logout)
 - [ ] Redis-backed rate limiting (multi-instance support)
 
 ### Beyond auth-service
-- [ ] API Gateway (separate Go project — single entry point, JWT verification via `/.well-known/jwks.json`, routing to all microservices)
-- [ ] Agency & Web Development service
+- [x] API Gateway (separate Go project — single entry point, JWT verification via `/.well-known/jwks.json`, routing to all microservices)
+- [x] Agency & Web Development service
 - [ ] Digital Products (Ebooks & Webinars) service
 - [ ] Academy (LMS) service
 - [ ] Order & Payment service
