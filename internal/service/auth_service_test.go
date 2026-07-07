@@ -44,6 +44,14 @@ func (m *MockUserRepository) CreateUser(ctx context.Context, email, passwordHash
 	return args.Get(0).(*model.User), args.Error(1)
 }
 
+func (m *MockUserRepository) UpsertGoogleUser(ctx context.Context, email string) (*model.User, bool, error) {
+	args := m.Called(ctx, email)
+	if args.Get(0) == nil {
+		return nil, false, args.Error(2)
+	}
+	return args.Get(0).(*model.User), args.Bool(1), args.Error(2)
+}
+
 func (m *MockUserRepository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	args := m.Called(ctx, email)
 	if args.Get(0) == nil {

@@ -10,6 +10,7 @@ import (
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, email, passwordHash string) (*model.User, error)
+	UpsertGoogleUser(ctx context.Context, email string) (user *model.User, isNew bool, err error)
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
 	GetUserByID(ctx context.Context, id string) (*model.User, error)
 	StoreVerificationToken(ctx context.Context, userID, tokenHash string, expiresAt time.Time) error

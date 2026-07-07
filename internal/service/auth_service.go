@@ -149,6 +149,52 @@ func (service *AuthService) Login(ctx context.Context, email, password string) (
 	return accessToken, refreshToken, nil
 }
 
+// LoginWithGoogle upserts a user for a Google-verified email and issues a
+// token pair, mirroring the password Login flow (revokes existing sessions).
+func (service *AuthService) LoginWithGoogle(ctx context.Context, email string) (accessToken string, refreshToken string, err error) {
+	user, isNew, err := service.userRepo.UpsertGoogleUser(ctx, email)
+	if err != nil {
+		return "", "", err
+	}
+
+	if user.Status != "active" {
+		return "", "", ErrAccountNotActive
+	}
+
+	if isNew {
+		if err := service.roleRepo.AssignRoleByName(ctx, user.ID, "student"); err != nil {
+			return "", "", err
+		}
+	}
+
+	roles, err := service.roleRepo.GetRoleNamesByUserID(ctx, user.ID)
+	if err != nil {
+		return "", "", err
+	}
+
+	if err := service.tokenRepo.RevokeAllUserTokens(ctx, user.ID); err != nil {
+		return "", "", err
+	}
+
+	accessToken, err = jwt.IssueAccessToken(service.privateKey, user.ID, roles, 15*time.Minute)
+	if err != nil {
+		return "", "", err
+	}
+
+	refreshToken, err = jwt.GenerateRefreshToken()
+	if err != nil {
+		return "", "", err
+	}
+
+	tokenHash := jwt.HashToken(refreshToken)
+	expiresAt := time.Now().Add(30 * 24 * time.Hour)
+	if err := service.tokenRepo.StoreRefreshToken(ctx, user.ID, tokenHash, expiresAt); err != nil {
+		return "", "", err
+	}
+
+	return accessToken, refreshToken, nil
+}
+
 func (service *AuthService) RefreshAccessToken(ctx context.Context, refreshToken string) (string, string, error) {
 	tokenHash := jwt.HashToken(refreshToken)
 

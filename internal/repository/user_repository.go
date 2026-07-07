@@ -33,6 +33,30 @@ func (repo *UserRepository) CreateUser(ctx context.Context, email, passwordHash 
 	return &user, nil
 }
 
+// UpsertGoogleUser creates a user for a Google sign-in, or returns the existing
+// one. Google users get an empty password hash (password login always fails)
+// and are marked verified — Google has already verified the address.
+// isNew reports whether the user was created by this call.
+func (repo *UserRepository) UpsertGoogleUser(ctx context.Context, email string) (user *model.User, isNew bool, err error) {
+	query := `
+		INSERT INTO auth.users (email, password_hash, email_verified)
+		VALUES ($1, '', true)
+		ON CONFLICT (email) DO UPDATE SET email_verified = true
+		RETURNING id, email, password_hash, email_verified, status, created_at, updated_at,
+		          (xmax = 0) AS is_new
+	`
+
+	var u model.User
+	err = repo.db.QueryRow(ctx, query, email).Scan(
+		&u.ID, &u.Email, &u.PasswordHash, &u.EmailVerified, &u.Status, &u.CreatedAt, &u.UpdatedAt, &isNew,
+	)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return &u, isNew, nil
+}
+
 func (repo *UserRepository) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	query := `
 		SELECT id, email, password_hash, email_verified, status, created_at, updated_at

@@ -68,6 +68,8 @@ func main() {
 	router.POST("/auth/verify-email/resend", authHandler.ResendVerification)
 	router.POST("/auth/password/reset-request", authHandler.RequestPasswordReset)
 	router.POST("/auth/password/reset", authHandler.ResetPassword)
+	router.GET("/auth/google/login", authHandler.GoogleLogin)
+	router.GET("/auth/google/callback", authHandler.GoogleCallback)
 	router.GET("/healthz", authHandler.Healthz)
 
 	admin := router.Group("/")
