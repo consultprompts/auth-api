@@ -14,7 +14,9 @@ func RequestLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		path := c.Request.URL.Path
-		if raw := c.Request.URL.RawQuery; raw != "" {
+		// The OAuth callback query carries the authorization code and state —
+		// credentials that must never be written to logs.
+		if raw := c.Request.URL.RawQuery; raw != "" && path != "/auth/google/callback" {
 			path = path + "?" + raw
 		}
 

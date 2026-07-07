@@ -56,7 +56,12 @@ func main() {
 	}
 
 	router := gin.New()
-	router.SetTrustedProxies(nil)
+	// Requests arrive via the api-gateway on the docker network. Trusting the
+	// private ranges lets ClientIP() resolve the real client from the
+	// X-Forwarded-For the gateway appends (it strips any client-supplied value),
+	// so the per-IP login lockout keys on actual clients — not the gateway,
+	// which would let one attacker lock out every user.
+	router.SetTrustedProxies([]string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"})
 	router.Use(middleware.RequestLogger(), middleware.Recovery())
 
 	router.POST("/auth/register", authHandler.Register)
