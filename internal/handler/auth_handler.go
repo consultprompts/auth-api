@@ -170,9 +170,18 @@ func (handler *AuthHandler) Me(c *gin.Context) {
 
 	roles, _ := c.Get(middleware.ContextUserRoles)
 
+	user, err := handler.authService.GetUserByID(c.Request.Context(), userID.(string))
+	if err != nil {
+		response.RespondError(c, http.StatusInternalServerError, response.ErrCodeInternalError, "an internal error occurred")
+		return
+	}
+
 	response.RespondOK(c, gin.H{
-		"id":    userID,
-		"roles": roles,
+		"id":             userID,
+		"roles":          roles,
+		"email":          user.Email,
+		"email_verified": user.EmailVerified,
+		"created_at":     user.CreatedAt,
 	})
 }
 
